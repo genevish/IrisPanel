@@ -137,6 +137,8 @@ def get_groups():
                 'on': action.get('on', False),
                 'brightness': action.get('bri', 254),
                 'has_color': 'hue' in action or 'xy' in action,
+                'hue': action.get('hue'),
+                'sat': action.get('sat'),
             }
         return jsonify(result)
     except Exception as e:

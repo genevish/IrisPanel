@@ -257,32 +257,53 @@ body::before {
     background: rgba(255, 255, 255, 0.15);
 }
 
-.card-icon {
-    width: 48px;
-    height: 48px;
+/* Card Buttons */
+.card-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.card-btn {
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
+    border: none;
     background: rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 16px;
     transition: all var(--transition-normal);
 }
 
-.device-card.on .card-icon {
-    background: var(--warning-color);
-    box-shadow: 0 0 30px rgba(255, 149, 0, 0.5);
+.card-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
 }
 
-.card-icon svg {
-    width: 24px;
-    height: 24px;
-    color: var(--text-secondary);
-    transition: color var(--transition-normal);
+.card-btn:active {
+    transform: scale(0.95);
 }
 
-.device-card.on .card-icon svg {
-    color: #fff;
+.card-btn svg {
+    width: 26px;
+    height: 26px;
+}
+
+.card-btn.toggle-btn.on {
+    background: #F5D76E;
+    color: #333;
+    box-shadow: 0 0 25px rgba(245, 215, 110, 0.6);
+}
+
+.card-btn.settings-btn {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.card-btn.settings-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
 }
 
 .card-name {
@@ -315,15 +336,6 @@ body::before {
 /* Group Card Specific */
 .device-card.group-card {
     border-color: rgba(88, 86, 214, 0.3);
-}
-
-.device-card.group-card .card-icon {
-    background: rgba(88, 86, 214, 0.2);
-}
-
-.device-card.group-card.on .card-icon {
-    background: #5856D6;
-    box-shadow: 0 0 30px rgba(88, 86, 214, 0.5);
 }
 
 /* Modal */
@@ -784,48 +796,7 @@ body::before {
     flex: 1;
 }
 
-/* Group actions */
-.group-actions {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    display: flex;
-    gap: 4px;
-    opacity: 0;
-    transition: opacity var(--transition-fast);
-}
-
-.device-card:hover .group-actions {
-    opacity: 1;
-}
-
-.group-action-btn {
-    width: 28px;
-    height: 28px;
-    border: none;
-    border-radius: 6px;
-    background: rgba(0, 0, 0, 0.3);
-    color: var(--text-secondary);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all var(--transition-fast);
-}
-
-.group-action-btn:hover {
-    background: rgba(0, 0, 0, 0.5);
-    color: var(--text-primary);
-}
-
-.group-action-btn.delete:hover {
-    background: var(--danger-color);
-}
-
-.group-action-btn svg {
-    width: 14px;
-    height: 14px;
-}
+/* Group Card - uses same color styling as lights */
 
 /* Responsive */
 @media (max-width: 768px) {

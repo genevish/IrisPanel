@@ -223,20 +223,51 @@ function createLightCard(light) {
 
     const brightnessPercent = Math.round((light.brightness / 254) * 100);
 
+    // Get light color for the toggle button
+    let toggleColor = '';
+    if (light.on && light.has_color && light.hue !== null && light.hue !== undefined) {
+        toggleColor = hsbToHex(light.hue, light.sat || 254, 254);
+    }
+
     card.innerHTML = `
-        <div class="card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 18h6"/>
-                <path d="M10 22h4"/>
-                <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>
-            </svg>
+        <div class="card-buttons">
+            <button class="card-btn toggle-btn ${light.on ? 'on' : ''}" title="Toggle" ${light.on && toggleColor ? `style="background: ${toggleColor}; box-shadow: 0 0 25px ${toggleColor}80;"` : ''}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="5"/>
+                    <line x1="12" y1="1" x2="12" y2="3"/>
+                    <line x1="12" y1="21" x2="12" y2="23"/>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                    <line x1="1" y1="12" x2="3" y2="12"/>
+                    <line x1="21" y1="12" x2="23" y2="12"/>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+            </button>
+            <button class="card-btn settings-btn" title="Settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+            </button>
         </div>
         <div class="card-name">${escapeHtml(light.name)}</div>
         <div class="card-status">${light.on ? `${brightnessPercent}%` : 'Off'}</div>
         <div class="card-brightness" style="width: ${light.on ? brightnessPercent : 0}%"></div>
     `;
 
-    card.addEventListener('click', () => openLightDetail(light.id, 'light'));
+    // Toggle button
+    card.querySelector('.toggle-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleDevice(light.id, 'light');
+    });
+
+    // Settings button
+    card.querySelector('.settings-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openLightDetail(light.id, 'light');
+    });
+
     return card;
 }
 
@@ -249,59 +280,69 @@ function createGroupCard(group) {
     const brightnessPercent = Math.round((group.brightness / 254) * 100);
     const lightCount = group.lights.length;
 
+    // Get group color for the toggle button
+    let toggleColor = '';
+    if (group.on && group.has_color && group.hue !== null && group.hue !== undefined) {
+        toggleColor = hsbToHex(group.hue, group.sat || 254, 254);
+    }
+
     card.innerHTML = `
-        <div class="group-actions">
-            <button class="group-action-btn edit" title="Edit">
+        <div class="card-buttons">
+            <button class="card-btn toggle-btn ${group.on ? 'on' : ''}" title="Toggle" ${group.on && toggleColor ? `style="background: ${toggleColor}; box-shadow: 0 0 25px ${toggleColor}80;"` : ''}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    <circle cx="12" cy="12" r="5"/>
+                    <line x1="12" y1="1" x2="12" y2="3"/>
+                    <line x1="12" y1="21" x2="12" y2="23"/>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                    <line x1="1" y1="12" x2="3" y2="12"/>
+                    <line x1="21" y1="12" x2="23" y2="12"/>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
                 </svg>
             </button>
-            <button class="group-action-btn delete" title="Delete">
+            <button class="card-btn settings-btn" title="Settings">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 6h18"/>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
-                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                 </svg>
             </button>
-        </div>
-        <div class="card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="7" height="7" rx="1"/>
-                <rect x="14" y="3" width="7" height="7" rx="1"/>
-                <rect x="3" y="14" width="7" height="7" rx="1"/>
-                <rect x="14" y="14" width="7" height="7" rx="1"/>
-            </svg>
         </div>
         <div class="card-name">${escapeHtml(group.name)}</div>
         <div class="card-status">${group.on ? `${brightnessPercent}%` : 'Off'} · ${lightCount} light${lightCount !== 1 ? 's' : ''}</div>
         <div class="card-brightness" style="width: ${group.on ? brightnessPercent : 0}%"></div>
     `;
 
-    // Main card click
-    card.addEventListener('click', (e) => {
-        if (!e.target.closest('.group-actions')) {
-            openLightDetail(group.id, 'group');
-        }
+    // Toggle button
+    card.querySelector('.toggle-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleDevice(group.id, 'group');
     });
 
-    // Edit button
-    card.querySelector('.edit').addEventListener('click', (e) => {
+    // Settings button
+    card.querySelector('.settings-btn').addEventListener('click', (e) => {
         e.stopPropagation();
-        openGroupModal(group);
-    });
-
-    // Delete button
-    card.querySelector('.delete').addEventListener('click', (e) => {
-        e.stopPropagation();
-        deleteGroup(group.id, group.name);
+        openLightDetail(group.id, 'group');
     });
 
     return card;
 }
 
 // Light Detail Modal
-function openLightDetail(id, type) {
+async function openLightDetail(id, type) {
+    // Fetch fresh data for this light/group
+    try {
+        const endpoint = type === 'light' ? '/api/lights' : '/api/groups';
+        const data = await api(endpoint);
+        if (type === 'light') {
+            lights = data;
+        } else {
+            groups = data;
+        }
+    } catch (error) {
+        console.error('Failed to fetch fresh data:', error);
+    }
+
     const item = type === 'light' ? lights[id] : groups[id];
     if (!item) return;
 
@@ -332,11 +373,13 @@ function openLightDetail(id, type) {
     // Color control
     if (item.has_color) {
         colorControl.classList.remove('hidden');
-        if (item.hue !== undefined && item.sat !== undefined) {
+        if (item.hue !== null && item.hue !== undefined && item.sat !== null && item.sat !== undefined) {
             const color = hsbToHex(item.hue, item.sat, item.brightness);
             lightColor.value = color;
             colorBtn.style.background = color;
         } else {
+            // Default to warm white if no color data
+            lightColor.value = '#ffffff';
             colorBtn.style.background = '#ffffff';
         }
     } else {
@@ -347,8 +390,65 @@ function openLightDetail(id, type) {
 }
 
 function closeLightDetailModal() {
+    // Re-render the card to reflect any color changes
+    if (currentLight) {
+        const { id, type } = currentLight;
+        const card = document.querySelector(`.device-card[data-id="${id}"][data-type="${type}"]`);
+        if (card) {
+            const item = type === 'light' ? lights[id] : groups[id];
+            if (item) {
+                const newCard = type === 'light' ? createLightCard(item) : createGroupCard(item);
+                card.replaceWith(newCard);
+            }
+        }
+
+        // If it's a group, also update all lights in that group
+        if (type === 'group') {
+            const group = groups[id];
+            if (group && group.lights) {
+                // Re-render each light card in the group using already-updated local state
+                group.lights.forEach(lightId => {
+                    const lightIdNum = parseInt(lightId);
+                    const lightCard = document.querySelector(`.device-card[data-id="${lightIdNum}"][data-type="light"]`);
+                    if (lightCard && lights[lightIdNum]) {
+                        const newLightCard = createLightCard(lights[lightIdNum]);
+                        lightCard.replaceWith(newLightCard);
+                    }
+                });
+            }
+        }
+    }
     lightModal.classList.add('hidden');
     currentLight = null;
+}
+
+// Toggle device from card button
+async function toggleDevice(id, type) {
+    const item = type === 'light' ? lights[id] : groups[id];
+    if (!item) return;
+
+    const newState = !item.on;
+
+    // Update local state
+    item.on = newState;
+    updateCard(id, type);
+
+    // Send to API
+    const endpoint = type === 'light'
+        ? `/api/lights/${id}`
+        : `/api/groups/${id}`;
+
+    try {
+        await api(endpoint, {
+            method: 'PUT',
+            body: JSON.stringify({ on: newState })
+        });
+    } catch (error) {
+        console.error('Failed to toggle:', error);
+        // Revert on failure
+        item.on = !newState;
+        updateCard(id, type);
+    }
 }
 
 // Control Handlers
@@ -426,6 +526,24 @@ async function handleColorChange() {
 
     const { hue, sat } = hexToHsb(hex);
 
+    // Update local state
+    const item = currentLight.type === 'light' ? lights[currentLight.id] : groups[currentLight.id];
+    if (item) {
+        item.hue = hue;
+        item.sat = sat;
+    }
+
+    // If it's a group, also update local state for all lights in the group
+    if (currentLight.type === 'group' && item && item.lights) {
+        item.lights.forEach(lightId => {
+            const lightIdNum = parseInt(lightId);
+            if (lights[lightIdNum] && lights[lightIdNum].has_color) {
+                lights[lightIdNum].hue = hue;
+                lights[lightIdNum].sat = sat;
+            }
+        });
+    }
+
     // Debounce
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(async () => {
@@ -453,6 +571,7 @@ function updateCard(id, type) {
     const brightnessPercent = Math.round((item.brightness / 254) * 100);
 
     card.classList.toggle('on', item.on);
+    card.querySelector('.toggle-btn').classList.toggle('on', item.on);
     card.querySelector('.card-status').textContent = type === 'light'
         ? (item.on ? `${brightnessPercent}%` : 'Off')
         : `${item.on ? `${brightnessPercent}%` : 'Off'} · ${item.lights?.length || 0} lights`;
