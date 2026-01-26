@@ -1,4 +1,4 @@
-// IrisPanel Web - JavaScript Application
+// The Iris Panel - JavaScript Application
 
 const API_BASE = '';
 

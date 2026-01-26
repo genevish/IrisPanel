@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-IrisPanel - Philips Hue Touch Control Panel
+The Iris Panel - Philips Hue Touch Control Panel
 A touch-friendly GUI for controlling Philips Hue lights.
 """
 
@@ -798,7 +798,7 @@ class IrisPanelApp:
 
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("IrisPanel - Hue Control")
+        self.root.title("The Iris Panel")
         self.root.geometry("800x600")
         self.root.configure(bg='#1E1E1E')
         self.root.minsize(600, 400)
@@ -835,7 +835,7 @@ class IrisPanelApp:
         header.pack(fill='x')
         header.pack_propagate(False)
 
-        title = tk.Label(header, text="IrisPanel",
+        title = tk.Label(header, text="The Iris Panel",
                         font=('Helvetica', 28, 'bold'),
                         bg='#2D2D2D', fg='#FFFFFF')
         title.pack(side='left', padx=20, pady=15)

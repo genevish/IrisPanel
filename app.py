@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-IrisPanel Web - Flask backend for Philips Hue control.
+The Iris Panel - Flask backend for Philips Hue control.
 """
 
 from flask import Flask, jsonify, request, render_template
@@ -229,5 +229,5 @@ if __name__ == '__main__':
         except Exception as e:
             print(f"Auto-connect failed: {e}")
 
-    print("Starting IrisPanel Web on http://localhost:5050")
+    print("Starting The Iris Panel on http://localhost:5050")
     app.run(debug=True, host='0.0.0.0', port=5050)
