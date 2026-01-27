@@ -5,6 +5,7 @@ const API_BASE = '';
 // State
 let lights = {};
 let groups = {};
+let roomClasses = [];
 let currentLight = null;
 let currentGroup = null;
 let debounceTimer = null;
@@ -30,6 +31,7 @@ const groupModalTitle = document.getElementById('group-modal-title');
 const groupNameInput = document.getElementById('group-name');
 const lightSelectList = document.getElementById('light-select-list');
 const groupError = document.getElementById('group-error');
+const roomClassSelect = document.getElementById('room-class');
 const cancelGroupBtn = document.getElementById('cancel-group-btn');
 const saveGroupBtn = document.getElementById('save-group-btn');
 
@@ -44,6 +46,14 @@ const brightnessValue = document.getElementById('brightness-value');
 const colorControl = document.getElementById('color-control');
 const lightColor = document.getElementById('light-color');
 const colorBtn = document.getElementById('color-btn');
+
+// Room Settings in Light Modal
+const roomSettings = document.getElementById('room-settings');
+const modalRoomClass = document.getElementById('modal-room-class');
+const modalLightSelectList = document.getElementById('modal-light-select-list');
+const roomSettingsError = document.getElementById('room-settings-error');
+const saveRoomSettingsBtn = document.getElementById('save-room-settings-btn');
+const deleteRoomBtn = document.getElementById('delete-room-btn');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', init);
@@ -74,6 +84,14 @@ function setupEventListeners() {
     lightBrightness.addEventListener('input', handleBrightnessInput);
     lightBrightness.addEventListener('change', handleBrightnessChange);
     lightColor.addEventListener('input', handleColorChange);
+
+    // Room settings in light modal
+    if (saveRoomSettingsBtn) {
+        saveRoomSettingsBtn.addEventListener('click', saveRoomSettings);
+    }
+    if (deleteRoomBtn) {
+        deleteRoomBtn.addEventListener('click', handleDeleteRoom);
+    }
 
     // Close modals on backdrop click
     lightModal.addEventListener('click', (e) => {
@@ -168,13 +186,20 @@ async function loadData() {
     contentEl.classList.add('hidden');
 
     try {
-        const [lightsData, groupsData] = await Promise.all([
+        const [lightsData, groupsData, roomClassesData] = await Promise.all([
             api('/api/lights'),
-            api('/api/groups')
+            api('/api/groups'),
+            api('/api/room-classes')
         ]);
 
         lights = lightsData;
         groups = groupsData;
+        roomClasses = roomClassesData;
+
+        // Populate room class dropdown
+        roomClassSelect.innerHTML = roomClasses.map(rc =>
+            `<option value="${rc}">${rc}</option>`
+        ).join('');
 
         renderGroups();
         renderLights();
@@ -346,7 +371,7 @@ async function openLightDetail(id, type) {
     const item = type === 'light' ? lights[id] : groups[id];
     if (!item) return;
 
-    currentLight = { id, type, ...item };
+    currentLight = { ...item, id, deviceType: type };
 
     lightName.textContent = item.name;
     lightPower.checked = item.on;
@@ -386,24 +411,51 @@ async function openLightDetail(id, type) {
         colorControl.classList.add('hidden');
     }
 
+    // Room settings (only for groups)
+    if (type === 'group') {
+        roomSettings.classList.remove('hidden');
+        roomSettingsError.textContent = '';
+
+        // Populate room class dropdown
+        modalRoomClass.innerHTML = roomClasses.map(rc =>
+            `<option value="${rc}">${rc}</option>`
+        ).join('');
+        modalRoomClass.value = item.class || 'Other';
+
+        // Populate light checkboxes
+        modalLightSelectList.innerHTML = '';
+        Object.values(lights).forEach(light => {
+            const isSelected = item.lights.includes(String(light.id));
+            const lightItem = document.createElement('div');
+            lightItem.className = 'light-select-item';
+            lightItem.innerHTML = `
+                <input type="checkbox" id="modal-light-${light.id}" value="${light.id}" ${isSelected ? 'checked' : ''}>
+                <label for="modal-light-${light.id}">${escapeHtml(light.name)}</label>
+            `;
+            modalLightSelectList.appendChild(lightItem);
+        });
+    } else {
+        roomSettings.classList.add('hidden');
+    }
+
     lightModal.classList.remove('hidden');
 }
 
 function closeLightDetailModal() {
     // Re-render the card to reflect any color changes
     if (currentLight) {
-        const { id, type } = currentLight;
-        const card = document.querySelector(`.device-card[data-id="${id}"][data-type="${type}"]`);
+        const { id, deviceType } = currentLight;
+        const card = document.querySelector(`.device-card[data-id="${id}"][data-type="${deviceType}"]`);
         if (card) {
-            const item = type === 'light' ? lights[id] : groups[id];
+            const item = deviceType === 'light' ? lights[id] : groups[id];
             if (item) {
-                const newCard = type === 'light' ? createLightCard(item) : createGroupCard(item);
+                const newCard = deviceType === 'light' ? createLightCard(item) : createGroupCard(item);
                 card.replaceWith(newCard);
             }
         }
 
         // If it's a group, also update all lights in that group
-        if (type === 'group') {
+        if (deviceType === 'group') {
             const group = groups[id];
             if (group && group.lights) {
                 // Re-render each light card in the group using already-updated local state
@@ -459,15 +511,15 @@ async function handlePowerChange() {
     lightIcon.className = `light-icon-large ${on ? 'on' : ''}`;
 
     // Update local state
-    if (currentLight.type === 'light') {
+    if (currentLight.deviceType === 'light') {
         lights[currentLight.id].on = on;
     } else {
         groups[currentLight.id].on = on;
     }
-    updateCard(currentLight.id, currentLight.type);
+    updateCard(currentLight.id, currentLight.deviceType);
 
     // Send to API
-    const endpoint = currentLight.type === 'light'
+    const endpoint = currentLight.deviceType === 'light'
         ? `/api/lights/${currentLight.id}`
         : `/api/groups/${currentLight.id}`;
 
@@ -495,15 +547,15 @@ async function handleBrightnessChange() {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(async () => {
         // Update local state
-        if (currentLight.type === 'light') {
+        if (currentLight.deviceType === 'light') {
             lights[currentLight.id].brightness = brightness;
         } else {
             groups[currentLight.id].brightness = brightness;
         }
-        updateCard(currentLight.id, currentLight.type);
+        updateCard(currentLight.id, currentLight.deviceType);
 
         // Send to API
-        const endpoint = currentLight.type === 'light'
+        const endpoint = currentLight.deviceType === 'light'
             ? `/api/lights/${currentLight.id}`
             : `/api/groups/${currentLight.id}`;
 
@@ -527,14 +579,14 @@ async function handleColorChange() {
     const { hue, sat } = hexToHsb(hex);
 
     // Update local state
-    const item = currentLight.type === 'light' ? lights[currentLight.id] : groups[currentLight.id];
+    const item = currentLight.deviceType === 'light' ? lights[currentLight.id] : groups[currentLight.id];
     if (item) {
         item.hue = hue;
         item.sat = sat;
     }
 
     // If it's a group, also update local state for all lights in the group
-    if (currentLight.type === 'group' && item && item.lights) {
+    if (currentLight.deviceType === 'group' && item && item.lights) {
         item.lights.forEach(lightId => {
             const lightIdNum = parseInt(lightId);
             if (lights[lightIdNum] && lights[lightIdNum].has_color) {
@@ -547,7 +599,7 @@ async function handleColorChange() {
     // Debounce
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(async () => {
-        const endpoint = currentLight.type === 'light'
+        const endpoint = currentLight.deviceType === 'light'
             ? `/api/lights/${currentLight.id}`
             : `/api/groups/${currentLight.id}`;
 
@@ -578,12 +630,74 @@ function updateCard(id, type) {
     card.querySelector('.card-brightness').style.width = `${item.on ? brightnessPercent : 0}%`;
 }
 
+// Save room settings (lights and room type)
+async function saveRoomSettings() {
+    if (!currentLight || currentLight.deviceType !== 'group') return;
+
+    const selectedLights = Array.from(
+        modalLightSelectList.querySelectorAll('input:checked')
+    ).map(input => input.value);
+
+    if (selectedLights.length === 0) {
+        roomSettingsError.textContent = 'Please select at least one light';
+        return;
+    }
+
+    const roomClass = modalRoomClass.value;
+
+    try {
+        await api(`/api/groups/${currentLight.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ lights: selectedLights, room_class: roomClass })
+        });
+
+        // Update local state
+        groups[currentLight.id].lights = selectedLights;
+        groups[currentLight.id].class = roomClass;
+
+        roomSettingsError.textContent = '';
+
+        // Re-render to reflect changes
+        closeLightDetailModal();
+        await loadData();
+    } catch (error) {
+        roomSettingsError.textContent = 'Failed to save room settings';
+        console.error('Failed to save room settings:', error);
+    }
+}
+
+// Handle delete room button
+async function handleDeleteRoom() {
+    if (!currentLight || currentLight.deviceType !== 'group') return;
+
+    const group = groups[currentLight.id];
+    if (!group) return;
+
+    if (!confirm(`Delete room "${group.name}"?`)) return;
+
+    try {
+        await api(`/api/groups/${currentLight.id}`, { method: 'DELETE' });
+        closeLightDetailModal();
+        await loadData();
+    } catch (error) {
+        roomSettingsError.textContent = 'Failed to delete room';
+        console.error('Failed to delete room:', error);
+    }
+}
+
 // Group Modal
 function openGroupModal(group = null) {
     currentGroup = group;
-    groupModalTitle.textContent = group ? 'Edit Group' : 'Create Group';
+    groupModalTitle.textContent = group ? 'Edit Room' : 'Create Room';
     groupNameInput.value = group ? group.name : '';
     groupError.textContent = '';
+
+    // Set room class (default to Living room for new groups)
+    if (group && group.class) {
+        roomClassSelect.value = group.class;
+    } else {
+        roomClassSelect.value = 'Living room';
+    }
 
     // Populate light list
     lightSelectList.innerHTML = '';
@@ -610,7 +724,7 @@ function closeGroupModal() {
 async function saveGroup() {
     const name = groupNameInput.value.trim();
     if (!name) {
-        groupError.textContent = 'Please enter a group name';
+        groupError.textContent = 'Please enter a room name';
         return;
     }
 
@@ -623,30 +737,32 @@ async function saveGroup() {
         return;
     }
 
+    const roomClass = roomClassSelect.value;
+
     try {
         if (currentGroup) {
             // Update existing group
             await api(`/api/groups/${currentGroup.id}`, {
                 method: 'PUT',
-                body: JSON.stringify({ name, lights: selectedLights })
+                body: JSON.stringify({ name, lights: selectedLights, room_class: roomClass })
             });
         } else {
-            // Create new group
+            // Create new room
             await api('/api/groups', {
                 method: 'POST',
-                body: JSON.stringify({ name, lights: selectedLights })
+                body: JSON.stringify({ name, lights: selectedLights, room_class: roomClass })
             });
         }
 
         closeGroupModal();
         await loadData();
     } catch (error) {
-        groupError.textContent = 'Failed to save group. Please try again.';
+        groupError.textContent = 'Failed to save room. Please try again.';
     }
 }
 
 async function deleteGroup(id, name) {
-    if (!confirm(`Delete group "${name}"?`)) return;
+    if (!confirm(`Delete room "${name}"?`)) return;
 
     try {
         await api(`/api/groups/${id}`, { method: 'DELETE' });

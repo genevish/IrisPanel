@@ -133,6 +133,8 @@ def get_groups():
             result[group_id] = {
                 'id': group_id,
                 'name': group_data.get('name', f'Group {group_id}'),
+                'type': group_data.get('type', 'LightGroup'),
+                'class': group_data.get('class', 'Other'),
                 'lights': group_data.get('lights', []),
                 'on': action.get('on', False),
                 'brightness': action.get('bri', 254),
@@ -166,40 +168,79 @@ def update_light(light_id):
 
 @app.route('/api/groups/<int:group_id>', methods=['PUT'])
 def update_group(group_id):
-    """Update a group's state."""
+    """Update a group's state or attributes."""
     if not bridge:
         return jsonify({'error': 'Not connected'}), 503
 
     data = request.json
     try:
+        # Update group action (state)
         if 'on' in data:
             bridge.set_group(group_id, 'on', data['on'])
         if 'brightness' in data:
             bridge.set_group(group_id, 'bri', data['brightness'])
         if 'hue' in data and 'sat' in data:
             bridge.set_group(group_id, {'hue': data['hue'], 'sat': data['sat']})
+
+        # Update group attributes (name, lights, class)
+        if 'name' in data or 'lights' in data or 'room_class' in data:
+            import requests
+            # Need to use the raw API for attribute updates
+            url = f"http://{bridge_ip}/api/{bridge.username}/groups/{group_id}"
+            attrs = {}
+            if 'name' in data:
+                attrs['name'] = data['name']
+            if 'lights' in data:
+                attrs['lights'] = data['lights']
+            if 'room_class' in data:
+                attrs['class'] = data['room_class']
+            if attrs:
+                requests.put(url, json=attrs)
+
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
+# Valid Hue room classes
+ROOM_CLASSES = [
+    'Living room', 'Kitchen', 'Dining', 'Bedroom', 'Kids bedroom',
+    'Bathroom', 'Nursery', 'Recreation', 'Office', 'Gym', 'Hallway',
+    'Toilet', 'Front door', 'Garage', 'Terrace', 'Garden', 'Driveway',
+    'Carport', 'Home', 'Downstairs', 'Upstairs', 'Top floor', 'Attic',
+    'Guest room', 'Staircase', 'Lounge', 'Man cave', 'Computer',
+    'Studio', 'Music', 'TV', 'Reading', 'Closet', 'Storage', 'Laundry room',
+    'Balcony', 'Porch', 'Barbecue', 'Pool', 'Other'
+]
+
+
+@app.route('/api/room-classes')
+def get_room_classes():
+    """Get available room classes."""
+    return jsonify(ROOM_CLASSES)
+
+
 @app.route('/api/groups', methods=['POST'])
 def create_group():
-    """Create a new group."""
+    """Create a new room (group that appears in Hue app)."""
     if not bridge:
         return jsonify({'error': 'Not connected'}), 503
 
     data = request.json
     name = data.get('name')
     lights = data.get('lights', [])
+    room_class = data.get('room_class', 'Other')
 
     if not name:
         return jsonify({'error': 'Group name required'}), 400
     if not lights:
         return jsonify({'error': 'At least one light required'}), 400
+    if room_class not in ROOM_CLASSES:
+        room_class = 'Other'
 
     try:
-        result = bridge.create_group(name, lights)
+        # Create a Room type group so it appears in the official Hue app
+        result = bridge.create_group(name, lights, group_type='Room', room_class=room_class)
         return jsonify({'success': True, 'group_id': result})
     except Exception as e:
         return jsonify({'error': str(e)}), 500

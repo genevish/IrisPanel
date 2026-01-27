@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>The Iris Panel</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=2">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -45,7 +45,7 @@
                             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
                         </svg>
                     </button>
-                    <button id="add-group-btn" class="icon-btn" title="Create Group">
+                    <button id="add-group-btn" class="icon-btn" title="Create Room">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"/>
                             <line x1="12" y1="8" x2="12" y2="16"/>
@@ -77,7 +77,7 @@
                             <rect x="3" y="14" width="7" height="7" rx="1"/>
                             <rect x="14" y="14" width="7" height="7" rx="1"/>
                         </svg>
-                        Rooms & Groups
+                        Rooms
                     </h2>
                     <div id="groups-grid" class="card-grid"></div>
                 </section>
@@ -100,8 +100,15 @@
         <!-- Create Group Modal -->
         <div id="group-modal" class="modal hidden">
             <div class="modal-content glass">
-                <h2 id="group-modal-title">Create Group</h2>
-                <input type="text" id="group-name" placeholder="Group name" class="glass-input">
+                <h2 id="group-modal-title">Create Room</h2>
+                <input type="text" id="group-name" placeholder="Room name" class="glass-input">
+                <div class="room-type-container">
+                    <label class="room-type-label">Room Type</label>
+                    <select id="room-class" class="glass-select">
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <label class="light-select-label">Select Lights</label>
                 <div class="light-select-list" id="light-select-list"></div>
                 <p id="group-error" class="error-text"></p>
                 <div class="modal-actions">
@@ -147,10 +154,26 @@
                         </div>
                     </div>
                 </div>
+                <!-- Room Settings (shown only for groups) -->
+                <div id="room-settings" class="room-settings hidden">
+                    <div class="settings-divider"></div>
+                    <h3 class="settings-subtitle">Room Settings</h3>
+                    <div class="room-type-container">
+                        <label class="room-type-label">Room Type</label>
+                        <select id="modal-room-class" class="glass-select">
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <label class="light-select-label">Lights in Room</label>
+                    <div class="light-select-list" id="modal-light-select-list"></div>
+                    <p id="room-settings-error" class="error-text"></p>
+                    <button id="save-room-settings-btn" class="primary-btn save-room-btn">Save Room Settings</button>
+                    <button id="delete-room-btn" class="danger-btn">Delete Room</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=4"></script>
 </body>
 </html>

@@ -752,6 +752,54 @@ body::before {
     display: none !important;
 }
 
+/* Room Type Selector */
+.room-type-container {
+    margin: 16px 0;
+    text-align: left;
+}
+
+.room-type-label,
+.light-select-label {
+    display: block;
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.light-select-label {
+    margin-top: 16px;
+}
+
+.glass-select {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    font-size: 16px;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 20px;
+    transition: all var(--transition-fast);
+}
+
+.glass-select:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+}
+
+.glass-select option {
+    background: #2D2D2D;
+    color: var(--text-primary);
+    padding: 12px;
+}
+
 /* Light Selection List */
 .light-select-list {
     max-height: 200px;
@@ -797,6 +845,55 @@ body::before {
 }
 
 /* Group Card - uses same color styling as lights */
+
+/* Room Settings in Light Modal */
+.room-settings {
+    margin-top: 24px;
+}
+
+.settings-divider {
+    height: 1px;
+    background: var(--glass-border);
+    margin: 8px 0 24px;
+}
+
+.settings-subtitle {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.room-settings .room-type-container {
+    margin: 0 0 16px;
+}
+
+.room-settings .light-select-list {
+    max-height: 150px;
+}
+
+.save-room-btn {
+    margin-top: 16px;
+}
+
+.danger-btn {
+    width: 100%;
+    padding: 14px 28px;
+    border: 1px solid var(--danger-color);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--danger-color);
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-top: 12px;
+}
+
+.danger-btn:hover {
+    background: var(--danger-color);
+    color: white;
+}
 
 /* Responsive */
 @media (max-width: 768px) {
