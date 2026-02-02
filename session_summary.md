@@ -1,34 +1,32 @@
-# Session Summary – 2026-02-02
+# Session Summary – 2026-02-02 (Session 2)
 
 ## Task
-Populate and maintain `CLAUDE.md` with project-wide context for efficient session resumption.
+Fix multiple UI synchronization bugs in the web frontend when controlling rooms/groups.
 
 ## What was done
-- Explored the full codebase via subagent to gather comprehensive project context.
-- Created `/CLAUDE.md` containing: project summary & active features, tech stack, file structure, core features, code conventions, architecture notes, known issues, and TODOs.
-- File stayed well under the 5k token limit; no overflow split needed.
+- Fixed room toggle not updating individual light card indicators
+- Fixed room color change not propagating to individual light cards
+- Fixed yellow flash on toggle button (missing inline color styles)
+- Fixed "save room settings" not applying the selected color
+- Created `refreshLightStates()` as lightweight alternative to full page refresh
+- Replaced delayed API refetch with immediate optimistic UI updates
+- Installed `flask-cors`, set up SSH remote for GitHub
 
-## Files created/modified
-- `CLAUDE.md` — created (central project context file)
+## Files modified
+- `static/app.js` — `toggleDevice()`, `handleColorChange()`, `updateCard()`, `saveRoomSettings()`, new `refreshLightStates()`
 
-## Codebase overview
-- **app.py** (276 lines) – Flask backend, REST API for Hue bridge/lights/groups, port 5050
-- **main.py** (1247 lines) – tkinter desktop GUI with `HueBridgeConnection` service class
-- **templates/index.html** (180 lines) – Web UI template
-- **static/app.js** (840 lines) – Web frontend, client-side state management
-- **static/style.css** (944 lines) – Apple Home glassmorphism styles
+## Bugs fixed
+1. **Room toggle → light cards**: Added immediate local state update + `updateCard()` for each child light
+2. **Room color → light cards**: Added live card updates in `handleColorChange()` for group devices
+3. **Yellow flash on toggle**: `updateCard()` now sets inline HSB→hex color on toggle button
+4. **Save room settings ignores color**: Flush debounce timer, include hue/sat in save payload
+5. **Toggle delay**: Removed timeout-based refresh, use optimistic update instead
 
-## Known issues
-1. Nested import in `app.py:187`
-2. Silent exception swallowing in `app.py:218`
-3. Broad exception catching in multiple locations
-4. No auth layer
-5. No error rollback for failed API calls
+## Key decisions
+- Optimistic local state updates preferred over refetching from bridge (faster UX)
+- `refreshLightStates()` created for cases needing fresh bridge data without full reload
+- Inline color styling in `updateCard()` rather than relying solely on CSS class toggling
 
-## Pending work
-- Scene/automation support
-- Light effects (colorloop, strobe)
-- Bridge auto-discovery
-- Multi-bridge support
-- Entertainment zone support
-- Light model/signature detection
+## Pending
+- Commit of `static/app.js` changes (was requested but not yet completed)
+- All TODOs from Session 1 still pending

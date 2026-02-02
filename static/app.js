@@ -495,6 +495,20 @@ async function toggleDevice(id, type) {
             method: 'PUT',
             body: JSON.stringify({ on: newState })
         });
+
+        // After toggling a group, wait for bridge to propagate then refresh light states
+        if (type === 'group') {
+            // Immediately update light cards with expected state
+            if (item.lights) {
+                item.lights.forEach(lightId => {
+                    const lid = parseInt(lightId);
+                    if (lights[lid]) {
+                        lights[lid].on = newState;
+                        updateCard(lid, 'light');
+                    }
+                });
+            }
+        }
     } catch (error) {
         console.error('Failed to toggle:', error);
         // Revert on failure
@@ -608,6 +622,20 @@ async function handleColorChange() {
                 method: 'PUT',
                 body: JSON.stringify({ hue, sat })
             });
+
+            // Live-update individual light cards when changing group color
+            if (currentLight && currentLight.deviceType === 'group') {
+                const group = groups[currentLight.id];
+                if (group && group.lights) {
+                    group.lights.forEach(lightId => {
+                        const lid = parseInt(lightId);
+                        const card = document.querySelector(`.device-card[data-id="${lid}"][data-type="light"]`);
+                        if (card && lights[lid]) {
+                            card.replaceWith(createLightCard(lights[lid]));
+                        }
+                    });
+                }
+            }
         } catch (error) {
             console.error('Failed to update color:', error);
         }
@@ -623,11 +651,54 @@ function updateCard(id, type) {
     const brightnessPercent = Math.round((item.brightness / 254) * 100);
 
     card.classList.toggle('on', item.on);
-    card.querySelector('.toggle-btn').classList.toggle('on', item.on);
+    const toggleBtn = card.querySelector('.toggle-btn');
+    toggleBtn.classList.toggle('on', item.on);
+
+    // Update toggle button color
+    if (item.on && item.has_color && item.hue !== null && item.hue !== undefined) {
+        const color = hsbToHex(item.hue, item.sat || 254, 254);
+        toggleBtn.style.background = color;
+        toggleBtn.style.boxShadow = `0 0 25px ${color}80`;
+    } else {
+        toggleBtn.style.background = '';
+        toggleBtn.style.boxShadow = '';
+    }
+
     card.querySelector('.card-status').textContent = type === 'light'
         ? (item.on ? `${brightnessPercent}%` : 'Off')
         : `${item.on ? `${brightnessPercent}%` : 'Off'} · ${item.lights?.length || 0} lights`;
     card.querySelector('.card-brightness').style.width = `${item.on ? brightnessPercent : 0}%`;
+}
+
+async function refreshLightStates() {
+    try {
+        const [lightsData, groupsData] = await Promise.all([
+            api('/api/lights'),
+            api('/api/groups')
+        ]);
+        lights = lightsData;
+        groups = groupsData;
+
+        // Update each light card in place
+        Object.values(lights).forEach(light => {
+            const card = document.querySelector(`.device-card[data-id="${light.id}"][data-type="light"]`);
+            if (card) {
+                const newCard = createLightCard(light);
+                card.replaceWith(newCard);
+            }
+        });
+
+        // Update each group card in place
+        Object.keys(groups).forEach(id => {
+            const card = document.querySelector(`.device-card[data-id="${id}"][data-type="group"]`);
+            if (card) {
+                const newCard = createGroupCard(groups[id]);
+                card.replaceWith(newCard);
+            }
+        });
+    } catch (error) {
+        console.error('Failed to refresh light states:', error);
+    }
 }
 
 // Save room settings (lights and room type)
@@ -645,10 +716,21 @@ async function saveRoomSettings() {
 
     const roomClass = modalRoomClass.value;
 
+    // Flush any pending color change
+    clearTimeout(debounceTimer);
+
+    // Include current color if the group has color capability
+    const saveData = { lights: selectedLights, room_class: roomClass };
+    const group = groups[currentLight.id];
+    if (group && group.has_color && group.hue !== null && group.hue !== undefined) {
+        saveData.hue = group.hue;
+        saveData.sat = group.sat;
+    }
+
     try {
         await api(`/api/groups/${currentLight.id}`, {
             method: 'PUT',
-            body: JSON.stringify({ lights: selectedLights, room_class: roomClass })
+            body: JSON.stringify(saveData)
         });
 
         // Update local state
@@ -659,7 +741,7 @@ async function saveRoomSettings() {
 
         // Re-render to reflect changes
         closeLightDetailModal();
-        await loadData();
+        await refreshLightStates();
     } catch (error) {
         roomSettingsError.textContent = 'Failed to save room settings';
         console.error('Failed to save room settings:', error);
