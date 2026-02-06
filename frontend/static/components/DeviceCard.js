@@ -34,7 +34,7 @@ export default function DeviceCard({ item, type, onSettings }) {
                 <button
                     onClick=${handleToggle}
                     class="w-12 h-12 rounded-full flex items-center justify-center transition-all shrink-0 ${isOn ? 'text-gray-900' : 'bg-white/[.07] text-iris-muted hover:bg-white/[.12]'}"
-                    style=${isOn ? `background:${glowColor || '#fbbf24'};box-shadow:0 0 20px ${glowColor || '#fbbf24'}60` : ''}
+                    style=${isOn ? { background: glowColor || '#fbbf24', boxShadow: `0 0 20px ${glowColor || '#fbbf24'}60` } : {}}
                     title="Toggle"
                 >
                     <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -58,7 +58,7 @@ export default function DeviceCard({ item, type, onSettings }) {
             </div>
             <div class="text-sm font-semibold truncate">${item.name}</div>
             <div class="text-xs ${isOn ? 'text-iris-muted' : 'text-iris-dim'} mt-0.5">${statusText}</div>
-            <div class="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-iris-accent to-indigo-400 transition-all duration-300" style="width:${isOn ? pct : 0}%"></div>
+            <div class="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-iris-accent to-indigo-400 transition-all duration-300" style=${{ width: `${isOn ? pct : 0}%` }}></div>
         </div>
     `;
 }

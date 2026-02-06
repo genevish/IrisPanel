@@ -136,7 +136,7 @@ export default function LightModal({ deviceId, deviceType, onClose }) {
                     ${item.has_color && html`
                         <div class="flex items-center justify-between">
                             <span class="text-iris-muted text-sm">Color</span>
-                            <div class="color-swatch w-10 h-10 rounded-full border-2 border-white/30 hover:border-white/50 transition" style="background:${colorHex}">
+                            <div class="color-swatch w-10 h-10 rounded-full border-2 border-white/30 hover:border-white/50 transition" style=${{ background: colorHex }}>
                                 <input type="color" value=${colorHex} onInput=${handleColor} />
                             </div>
                         </div>
