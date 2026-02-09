@@ -4,7 +4,7 @@
 import { html, React } from './lib.js';
 import { api } from './api.js';
 
-const { createContext, useContext, useState, useCallback, useRef } = React;
+const { createContext, useContext, useState, useCallback, useRef, useEffect } = React;
 
 const BridgeContext = createContext(null);
 
@@ -38,8 +38,8 @@ export function BridgeProvider({ children }) {
         }
     }, []);
 
-    const refresh = useCallback(async () => {
-        setLoading(true);
+    const refresh = useCallback(async (silent = false) => {
+        if (!silent) setLoading(true);
         setError(null);
         try {
             const [l, g, rc] = await Promise.all([
@@ -54,7 +54,7 @@ export function BridgeProvider({ children }) {
             console.error('Failed to load data:', e);
             setError(e.message || 'Failed to load lights');
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     }, []);
 
@@ -129,7 +129,10 @@ export function BridgeProvider({ children }) {
 
         if (debounce) {
             clearTimeout(debounceRef.current);
-            debounceRef.current = setTimeout(send, 150);
+            debounceRef.current = setTimeout(() => {
+                debounceRef.current = null;
+                send();
+            }, 150);
         } else {
             send();
         }
@@ -167,7 +170,10 @@ export function BridgeProvider({ children }) {
 
         if (debounce) {
             clearTimeout(debounceRef.current);
-            debounceRef.current = setTimeout(send, 150);
+            debounceRef.current = setTimeout(() => {
+                debounceRef.current = null;
+                send();
+            }, 150);
         } else {
             send();
         }
@@ -193,6 +199,16 @@ export function BridgeProvider({ children }) {
         });
         await refresh();
     }, [refresh]);
+
+    // Auto-refresh every 3s when connected; skip if a debounced update is in flight
+    useEffect(() => {
+        if (!connected) return;
+        const id = setInterval(() => {
+            if (debounceRef.current) return;
+            refresh(true);
+        }, 3000);
+        return () => clearInterval(id);
+    }, [connected, refresh]);
 
     const value = {
         connected, bridgeIp, savedIp, lights, groups, roomClasses,
