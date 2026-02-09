@@ -39,9 +39,25 @@
     }
     </script>
     <style>
+        * {
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+        html {
+            overflow: auto;
+            height: 100%;
+        }
         body {
             background: linear-gradient(165deg, #0a0a0f 0%, #111118 100%);
-            min-height: 100vh;
+            min-height: 100%;
+            overflow-y: scroll;
+            -webkit-overflow-scrolling: touch;
+        }
+        #root {
+            min-height: 100%;
+            overflow-y: auto;
         }
         /* Custom scrollbar */
         ::-webkit-scrollbar { width: 6px; }
@@ -72,6 +88,61 @@
 </head>
 <body class="text-iris-text font-sans antialiased">
     <div id="root"></div>
+    <script>
+        // Mouse/touch drag scroll for kiosk mode
+        (function() {
+            let isDown = false;
+            let startY = 0;
+            let startScrollTop = 0;
+
+            document.addEventListener('mousedown', function(e) {
+                // Don't interfere with buttons/inputs
+                if (e.target.closest('button, input, select, a')) return;
+                isDown = true;
+                startY = e.clientY;
+                startScrollTop = window.scrollY;
+                document.body.style.cursor = 'grabbing';
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                if (!isDown) return;
+                e.preventDefault();
+                const deltaY = startY - e.clientY;
+                window.scrollTo(0, startScrollTop + deltaY);
+            });
+
+            document.addEventListener('mouseup', function() {
+                isDown = false;
+                document.body.style.cursor = '';
+            });
+
+            document.addEventListener('mouseleave', function() {
+                isDown = false;
+                document.body.style.cursor = '';
+            });
+
+            // Touch events as backup
+            document.addEventListener('touchstart', function(e) {
+                if (e.target.closest('button, input, select, a')) return;
+                if (e.touches.length === 1) {
+                    startY = e.touches[0].clientY;
+                    startScrollTop = window.scrollY;
+                    isDown = true;
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchmove', function(e) {
+                if (isDown && e.touches.length === 1) {
+                    const deltaY = startY - e.touches[0].clientY;
+                    window.scrollTo(0, startScrollTop + deltaY);
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchend', function() {
+                isDown = false;
+            }, { passive: true });
+        })();
+    </script>
     <script type="module" src="/static/app.js"></script>
 </body>
 </html>

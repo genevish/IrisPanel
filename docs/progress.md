@@ -51,3 +51,23 @@
 3. Toggle button flashed yellow → added inline color to `updateCard()`
 4. Save room settings ignored color → flush debounce timer, send hue/sat in save payload
 5. Room toggle had unnecessary delay → removed timeout, use immediate optimistic update
+
+## Session 3 – 2026-02-02 → 2026-02-09 (uncommitted)
+
+### What was done
+- **React 18 downgrade**: Import map changed from React 19 to React 18 (`esm.sh/react@18`) to fix style prop handling
+- **Kiosk/touch mode**: Added mouse/touch drag-scroll IIFE in `index.html` for touchscreen kiosk use; disabled text selection and touch callout globally via CSS (`touch-action: manipulation`, `user-select: none`)
+- **Compact grid layout**: `DeviceGrid.js` switched from responsive breakpoints (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`) to fixed `grid-cols-4 gap-2`; reduced outer padding/spacing
+- **LightModal redesign**: Widened modal (`max-w-3xl`), side-by-side flex layout for groups (controls left, room settings right with vertical divider); individual lights get a centered narrow column (`w-64`). All spacing/sizing reduced for compact display.
+- **Scroll/overflow CSS**: `html` set to `overflow: auto; height: 100%`, body uses `overflow-y: scroll` with `-webkit-overflow-scrolling: touch`, `#root` gets `overflow-y: auto`
+
+### Files modified
+- `frontend/index.html` — kiosk drag-scroll script, global touch/selection CSS, scroll overflow rules
+- `frontend/static/components/DeviceGrid.js` — fixed 4-col grid, tighter spacing
+- `frontend/static/components/LightModal.js` — side-by-side group layout, compact sizing
+
+### Key decisions
+- React downgraded from 19 to 18 (style prop compatibility issue)
+- UI optimized for fixed-size kiosk/tablet display rather than responsive mobile-first
+- Drag-scroll bypasses interactive elements (buttons, inputs, selects, links)
+- Touch events registered as `{ passive: true }` for performance

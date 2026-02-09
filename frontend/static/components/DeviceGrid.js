@@ -35,7 +35,7 @@ export default function DeviceGrid({ onSettings }) {
     const lightIds = Object.keys(lights);
 
     return html`
-        <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+        <main class="max-w-6xl mx-auto px-2 sm:px-4 py-3 space-y-4">
             ${groupIds.length > 0 && html`
                 <section>
                     <h2 class="flex items-center gap-2 text-lg font-semibold text-iris-muted mb-4">
@@ -45,7 +45,7 @@ export default function DeviceGrid({ onSettings }) {
                         </svg>
                         Rooms
                     </h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-4 gap-2">
                         ${groupIds.map(id => html`
                             <${DeviceCard} key=${'g' + id} item=${groups[id]} type="group" onSettings=${onSettings} />
                         `)}
@@ -60,7 +60,7 @@ export default function DeviceGrid({ onSettings }) {
                     </svg>
                     Lights
                 </h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="grid grid-cols-4 gap-2">
                     ${lightIds.map(id => html`
                         <${DeviceCard} key=${'l' + id} item=${lights[id]} type="light" onSettings=${onSettings} />
                     `)}

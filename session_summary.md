@@ -1,32 +1,32 @@
-# Session Summary – 2026-02-02 (Session 2)
+# Session Summary – 2026-02-09 (Session 4)
 
 ## Task
-Fix multiple UI synchronization bugs in the web frontend when controlling rooms/groups.
+Review latest code changes and update project documentation.
 
-## What was done
-- Fixed room toggle not updating individual light card indicators
-- Fixed room color change not propagating to individual light cards
-- Fixed yellow flash on toggle button (missing inline color styles)
-- Fixed "save room settings" not applying the selected color
-- Created `refreshLightStates()` as lightweight alternative to full page refresh
-- Replaced delayed API refetch with immediate optimistic UI updates
-- Installed `flask-cors`, set up SSH remote for GitHub
+## Current uncommitted changes (since commit 4928612)
+Three files changed (excluding IDE workspace):
 
-## Files modified
-- `static/app.js` — `toggleDevice()`, `handleColorChange()`, `updateCard()`, `saveRoomSettings()`, new `refreshLightStates()`
+### `frontend/index.html`
+- **Kiosk mode**: Added IIFE drag-scroll handler (mouse + touch) for touchscreen kiosk use
+- **Global CSS**: `touch-action: manipulation`, `user-select: none`, `-webkit-touch-callout: none` on `*`
+- **Scroll overhaul**: `html` overflow auto, body `overflow-y: scroll` with `-webkit-overflow-scrolling: touch`, `#root overflow-y: auto`
 
-## Bugs fixed
-1. **Room toggle → light cards**: Added immediate local state update + `updateCard()` for each child light
-2. **Room color → light cards**: Added live card updates in `handleColorChange()` for group devices
-3. **Yellow flash on toggle**: `updateCard()` now sets inline HSB→hex color on toggle button
-4. **Save room settings ignores color**: Flush debounce timer, include hue/sat in save payload
-5. **Toggle delay**: Removed timeout-based refresh, use optimistic update instead
+### `frontend/static/components/DeviceGrid.js`
+- Grid changed from responsive (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`) to fixed `grid-cols-4 gap-2`
+- Outer padding/spacing reduced (`px-2 sm:px-4 py-3 space-y-4`)
 
-## Key decisions
-- Optimistic local state updates preferred over refetching from bridge (faster UX)
-- `refreshLightStates()` created for cases needing fresh bridge data without full reload
-- Inline color styling in `updateCard()` rather than relying solely on CSS class toggling
+### `frontend/static/components/LightModal.js`
+- Modal widened to `max-w-3xl` (was `max-w-sm`)
+- Groups: side-by-side flex layout (controls left, room settings right with `border-l` divider)
+- Individual lights: centered `w-64` column
+- Room settings: Type and Lights selectors side-by-side in a flex row
+- All sizing/spacing reduced for compact display
+
+## Documentation updated
+- `CLAUDE.md` — React version corrected (18, not 19), kiosk mode and compact grid added to features, modal layout noted in architecture
+- `docs/progress.md` — Session 3 entry added covering all uncommitted changes
+- `session_summary.md` — replaced with this current-state summary
 
 ## Pending
-- Commit of `static/app.js` changes (was requested but not yet completed)
-- All TODOs from Session 1 still pending
+- Uncommitted changes in 3 frontend files (listed above)
+- All TODOs from CLAUDE.md still pending (scenes, effects, auto-discovery, multi-bridge, entertainment zones, model detection)
