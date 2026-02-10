@@ -1,32 +1,45 @@
-# Session Summary – 2026-02-09 (Session 4)
+# Session Summary – 2026-02-10 (Session 4)
 
 ## Task
-Review latest code changes and update project documentation.
+Add auto-refresh polling, fix color display on device cards, add screen saver, and resolve deployment/caching issues.
 
-## Current uncommitted changes (since commit 4928612)
-Three files changed (excluding IDE workspace):
+## Changes since last commit (41c9412)
 
-### `frontend/index.html`
-- **Kiosk mode**: Added IIFE drag-scroll handler (mouse + touch) for touchscreen kiosk use
-- **Global CSS**: `touch-action: manipulation`, `user-select: none`, `-webkit-touch-callout: none` on `*`
-- **Scroll overhaul**: `html` overflow auto, body `overflow-y: scroll` with `-webkit-overflow-scrolling: touch`, `#root overflow-y: auto`
+### `backend/main.py`
+- Added `NoCacheStaticMiddleware` using Starlette's `BaseHTTPMiddleware`
+- Sets `Cache-Control: no-cache` for all `/static/` paths to prevent browsers serving stale JS
 
-### `frontend/static/components/DeviceGrid.js`
-- Grid changed from responsive (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`) to fixed `grid-cols-4 gap-2`
-- Outer padding/spacing reduced (`px-2 sm:px-4 py-3 space-y-4`)
+### `frontend/static/components/DeviceCard.js`
+- Top accent bar: replaced fixed `bg-gradient-to-r from-iris-accent to-indigo-400` with dynamic `glowColor` from light's HSB values
+- Bottom brightness bar: same dynamic color treatment
+- Both fall back to the original gradient when no color info is available
 
-### `frontend/static/components/LightModal.js`
-- Modal widened to `max-w-3xl` (was `max-w-sm`)
-- Groups: side-by-side flex layout (controls left, room settings right with `border-l` divider)
-- Individual lights: centered `w-64` column
-- Room settings: Type and Lights selectors side-by-side in a flex row
-- All sizing/spacing reduced for compact display
+### `frontend/static/components/ScreenSaver.js` (new)
+- Overlay dims (opacity 0.7) after 60s idle, goes dark (opacity 1.0) after 300s
+- Wakes on `touchstart`, `mousedown`, or `keydown`
+- Dim: `pointer-events: none` (taps pass through to UI)
+- Dark: `pointer-events: auto` (first tap only wakes, no UI action)
 
-## Documentation updated
-- `CLAUDE.md` — React version corrected (18, not 19), kiosk mode and compact grid added to features, modal layout noted in architecture
-- `docs/progress.md` — Session 3 entry added covering all uncommitted changes
-- `session_summary.md` — replaced with this current-state summary
+### `frontend/static/components/App.js`
+- Added `ScreenSaver` import and `<ScreenSaver />` render inside `AppInner`
 
-## Pending
-- Uncommitted changes in 3 frontend files (listed above)
-- All TODOs from CLAUDE.md still pending (scenes, effects, auto-discovery, multi-bridge, entertainment zones, model detection)
+## Previously committed this session (41c9412)
+
+### `frontend/static/state.js`
+- Added 3-second polling interval calling `refresh(true)` when connected
+- `refresh()` accepts `silent` param to skip loading spinner
+- Polling skipped when `debounceRef.current` is active (user dragging slider)
+- Fixed debounce ref cleanup: `debounceRef.current = null` after timeout fires
+
+## Bugs fixed
+1. **Auto-refresh not working** — browser cached old `state.js`; fixed with no-cache middleware
+2. **Card colors not reflecting light state** — accent bars used fixed gradient; now use `glowColor`
+3. **Debounce ref never clearing** — stale timer ID permanently blocked polling; now resets to `null`
+4. **Screen saver not dimming** — `mousemove` caused constant wake resets; removed from tracked events
+
+## Deployed
+- Raspberry Pi at `scott@192.168.0.215:~/IrisPanel/` via rsync + `sudo systemctl restart irispanel`
+
+## Pending confirmation
+- Screen saver functionality after `mousemove` fix
+- Color display accuracy on device cards

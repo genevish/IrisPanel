@@ -3,10 +3,11 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from backend.bridge import HueBridgeConnection
 from backend.routes import connection, lights, groups
@@ -24,6 +25,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="The Iris Panel", lifespan=lifespan)
 
+class NoCacheStaticMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        if request.url.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
+app.add_middleware(NoCacheStaticMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

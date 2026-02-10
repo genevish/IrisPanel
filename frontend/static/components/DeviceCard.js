@@ -29,7 +29,7 @@ export default function DeviceCard({ item, type, onSettings }) {
 
     return html`
         <div class="group bg-surface border ${isOn ? 'border-surface-border/60' : 'border-surface-border/40'} rounded-xl p-4 relative overflow-hidden transition-all hover:bg-surface-hover hover:scale-[1.02] hover:shadow-lg cursor-default">
-            ${isOn && html`<div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-iris-accent to-indigo-400"></div>`}
+            ${isOn && html`<div class="absolute top-0 left-0 right-0 h-0.5" style=${{ background: glowColor || 'linear-gradient(to right, var(--color-iris-accent), #818cf8)' }}></div>`}
             <div class="flex gap-3 mb-3">
                 <button
                     onClick=${handleToggle}
@@ -58,7 +58,7 @@ export default function DeviceCard({ item, type, onSettings }) {
             </div>
             <div class="text-sm font-semibold truncate">${item.name}</div>
             <div class="text-xs ${isOn ? 'text-iris-muted' : 'text-iris-dim'} mt-0.5">${statusText}</div>
-            <div class="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-iris-accent to-indigo-400 transition-all duration-300" style=${{ width: `${isOn ? pct : 0}%` }}></div>
+            <div class="absolute bottom-0 left-0 h-0.5 transition-all duration-300" style=${{ width: `${isOn ? pct : 0}%`, background: glowColor || 'linear-gradient(to right, var(--color-iris-accent), #818cf8)' }}></div>
         </div>
     `;
 }

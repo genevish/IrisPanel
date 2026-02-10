@@ -71,3 +71,33 @@
 - UI optimized for fixed-size kiosk/tablet display rather than responsive mobile-first
 - Drag-scroll bypasses interactive elements (buttons, inputs, selects, links)
 - Touch events registered as `{ passive: true }` for performance
+
+## Session 4 – 2026-02-10
+
+### What was done
+- **Auto-refresh polling**: Added 3-second polling interval in `state.js` that silently refreshes light/group state from the bridge. Skips polls when a debounced slider/color update is in flight to prevent UI flicker.
+- **Silent refresh mode**: `refresh()` now accepts a `silent` parameter to skip the loading spinner during background polls.
+- **Debounce ref cleanup**: Fixed `debounceRef.current` not resetting to `null` after timeout fires, which would permanently block polling.
+- **No-cache middleware**: Added `NoCacheStaticMiddleware` to `backend/main.py` — sets `Cache-Control: no-cache` on all `/static/` paths so browsers always fetch fresh JS.
+- **Color-aware accent bars**: Updated `DeviceCard.js` top and bottom accent bars to use the light's actual HSB color (`glowColor`) instead of a fixed purple/indigo gradient. Falls back to the gradient when no color info is available.
+- **Screen saver**: Created `ScreenSaver.js` component — dims overlay (opacity 0.7) after 1 minute idle, goes fully dark (opacity 1.0) after 5 minutes. Wakes instantly on `touchstart`, `mousedown`, or `keydown`. Dim state uses `pointer-events: none` so taps pass through; dark state uses `pointer-events: auto` to capture the wake tap.
+- **Pi deployment**: Deployed to Raspberry Pi via rsync + systemd restart at `scott@192.168.0.215:~/IrisPanel/`.
+
+### Files modified
+- `frontend/static/state.js` — auto-refresh polling, silent refresh, debounce ref cleanup
+- `backend/main.py` — no-cache static middleware
+- `frontend/static/components/DeviceCard.js` — color-aware accent bars
+- `frontend/static/components/ScreenSaver.js` — new screen saver component
+- `frontend/static/components/App.js` — added ScreenSaver import and render
+
+### Key decisions
+- 3-second poll interval chosen as balance between responsiveness and API load
+- Silent refresh prevents loading spinner flash during background polls
+- Screen saver tracks only `touchstart`, `mousedown`, `keydown` (not `mousemove`, which caused false wakes)
+- No-cache middleware applied at server level rather than per-file to ensure all static assets stay fresh
+
+### Bugs fixed
+1. Auto-refresh not working → browser serving cached `state.js` without polling code; fixed with no-cache middleware
+2. Card accent bars not reflecting light color → replaced fixed gradient with dynamic `glowColor`
+3. Debounce ref never clearing → added `debounceRef.current = null` after timeout fires
+4. Screen saver not dimming → removed `mousemove` from tracked events

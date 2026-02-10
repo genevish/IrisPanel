@@ -5,6 +5,7 @@ import Header from './Header.js';
 import DeviceGrid from './DeviceGrid.js';
 import LightModal from './LightModal.js';
 import GroupModal from './GroupModal.js';
+import ScreenSaver from './ScreenSaver.js';
 
 const { useState, useEffect, useCallback } = React;
 
@@ -27,6 +28,7 @@ function AppInner() {
 
     return html`
         <div class="min-h-screen flex flex-col">
+            <${ScreenSaver} />
             <${ConnectionModal} />
             ${connected && html`
                 <${Header} onAddRoom=${() => setShowGroupModal(true)} />
