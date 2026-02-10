@@ -6,8 +6,8 @@ import { html, React } from '../lib.js';
 
 const { useState, useEffect, useRef, useCallback } = React;
 
-const DIM_AFTER = 60;    // seconds
-const DARK_AFTER = 300;  // seconds
+const DIM_AFTER = 120;   // seconds
+const DARK_AFTER = 600;  // seconds
 
 export default function ScreenSaver() {
     const [state, setState] = useState('awake'); // 'awake' | 'dim' | 'dark'
