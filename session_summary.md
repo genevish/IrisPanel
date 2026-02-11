@@ -1,45 +1,34 @@
-# Session Summary – 2026-02-10 (Session 4)
+# Session Summary – 2026-02-10 (Session 4, continued)
 
 ## Task
-Add auto-refresh polling, fix color display on device cards, add screen saver, and resolve deployment/caching issues.
+Fix screen saver not dimming, hide mouse cursor, tune screen saver timings, fix keyring prompt on Pi.
 
-## Changes since last commit (41c9412)
+## Commits this session
+- `3d57975` — Commit all Session 4 changes (no-cache middleware, color-aware cards, screen saver, docs)
+- `66eeada` — Hide mouse cursor and tune screen saver timings (2min dim, 10min dark)
 
-### `backend/main.py`
-- Added `NoCacheStaticMiddleware` using Starlette's `BaseHTTPMiddleware`
-- Sets `Cache-Control: no-cache` for all `/static/` paths to prevent browsers serving stale JS
+## Changes
 
-### `frontend/static/components/DeviceCard.js`
-- Top accent bar: replaced fixed `bg-gradient-to-r from-iris-accent to-indigo-400` with dynamic `glowColor` from light's HSB values
-- Bottom brightness bar: same dynamic color treatment
-- Both fall back to the original gradient when no color info is available
+### `frontend/static/components/ScreenSaver.js`
+- Debugged dimming not working (browser was serving cached JS before no-cache middleware took effect)
+- Added temporary debug logging + reduced timeouts to 10s/30s for testing
+- After confirming it worked, set final timings: `DIM_AFTER = 120` (2 min), `DARK_AFTER = 600` (10 min)
+- Removed all debug logging
 
-### `frontend/static/components/ScreenSaver.js` (new)
-- Overlay dims (opacity 0.7) after 60s idle, goes dark (opacity 1.0) after 300s
-- Wakes on `touchstart`, `mousedown`, or `keydown`
-- Dim: `pointer-events: none` (taps pass through to UI)
-- Dark: `pointer-events: auto` (first tap only wakes, no UI action)
+### `frontend/index.html`
+- Added `cursor: none` to global `*` CSS rule to hide mouse pointer in kiosk mode
 
-### `frontend/static/components/App.js`
-- Added `ScreenSaver` import and `<ScreenSaver />` render inside `AppInner`
-
-## Previously committed this session (41c9412)
-
-### `frontend/static/state.js`
-- Added 3-second polling interval calling `refresh(true)` when connected
-- `refresh()` accepts `silent` param to skip loading spinner
-- Polling skipped when `debounceRef.current` is active (user dragging slider)
-- Fixed debounce ref cleanup: `debounceRef.current = null` after timeout fires
+### Pi: `~/.config/autostart/irispanel-kiosk.desktop`
+- Added `--password-store=basic` flag to Chromium launch command to eliminate GNOME Keyring prompt on boot
 
 ## Bugs fixed
-1. **Auto-refresh not working** — browser cached old `state.js`; fixed with no-cache middleware
-2. **Card colors not reflecting light state** — accent bars used fixed gradient; now use `glowColor`
-3. **Debounce ref never clearing** — stale timer ID permanently blocked polling; now resets to `null`
-4. **Screen saver not dimming** — `mousemove` caused constant wake resets; removed from tracked events
+1. **Screen saver still not dimming** — browser had cached old ScreenSaver.js from before no-cache middleware was active; deploying fresh files with middleware running fixed it
+2. **Mouse cursor visible on kiosk** — added `cursor: none` to global CSS
+3. **Keyring prompt on Pi reboot** — Chromium was trying to access GNOME Keyring; added `--password-store=basic` to launch flags
 
 ## Deployed
-- Raspberry Pi at `scott@192.168.0.215:~/IrisPanel/` via rsync + `sudo systemctl restart irispanel`
+- All changes rsynced to Pi at `scott@192.168.0.215:~/IrisPanel/`
+- Pi rebooted to verify keyring fix
 
 ## Pending confirmation
-- Screen saver functionality after `mousemove` fix
-- Color display accuracy on device cards
+- Whether keyring prompt is gone after reboot
