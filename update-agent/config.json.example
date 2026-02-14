@@ -1,0 +1,7 @@
+{
+    "server_url": "http://192.168.1.XXX:5051",
+    "poll_interval": 60,
+    "current_version": 0,
+    "install_dir": "/home/scott/IrisPanel",
+    "service_name": "irispanel"
+}

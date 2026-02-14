@@ -1,0 +1,14 @@
+[Unit]
+Description=IrisPanel Update Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=scott
+ExecStart=/home/scott/IrisPanel/venv/bin/python /home/scott/iris-updater/agent.py
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

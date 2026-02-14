@@ -101,3 +101,46 @@
 2. Card accent bars not reflecting light color → replaced fixed gradient with dynamic `glowColor`
 3. Debounce ref never clearing → added `debounceRef.current = null` after timeout fires
 4. Screen saver not dimming → removed `mousemove` from tracked events
+
+## Session 5 – 2026-02-14
+
+### What was done
+- **Update server** (`update-server/`): FastAPI app on port 5051 that serves versioned release tarballs. Endpoints: `GET /api/latest` (returns release metadata or 404), `GET /api/download/{version}` (streams tarball).
+- **Publish CLI** (`update-server/publish.py`): Packages current codebase into `releases/irispanel-{N}.tar.gz`. Refuses dirty git trees, computes SHA-256, tracks build number in `state.json`, cleans old releases (keeps last 5).
+- **Update agent** (`update-agent/agent.py`): Standalone polling script for the Pi. Checks for new versions, downloads tarballs, verifies SHA-256, applies with backup/rollback, restarts the systemd service.
+- **Supporting files**: Pydantic model, uvicorn entry point, systemd unit file, config template, agent requirements.txt.
+- **Updated `.gitignore`**: Added entries for `update-server/releases/` and `update-server/state.json`.
+- **Updated `CLAUDE.md`**: Added update-server and update-agent to file structure, added "Update System" usage section.
+
+### Files created
+- `update-server/server.py` — FastAPI update server with lifespan pattern
+- `update-server/publish.py` — Release packaging CLI
+- `update-server/models.py` — `ReleaseInfo` Pydantic model
+- `update-server/run_server.py` — uvicorn entry point (port 5051)
+- `update-agent/agent.py` — Polling loop + download + apply + rollback
+- `update-agent/config.json.example` — Template for `~/.iris_updater_config.json`
+- `update-agent/requirements.txt` — `httpx`
+- `update-agent/iris-updater.service` — systemd unit file
+
+### Files modified
+- `.gitignore` — Added `update-server/releases/`, `update-server/state.json`
+- `CLAUDE.md` — Added update system docs, file structure, usage instructions
+
+### Key design decisions
+- **Integer versioning** (1, 2, 3...) over semver — simpler for internal tooling
+- **Tarball packaging** with `irispanel/` prefix containing `backend/`, `frontend/`, `run.py`, `requirements.txt`
+- **SHA-256 verification** — computed at publish time, verified by agent before applying
+- **Rollback mechanism** — current install backed up to `~/IrisPanel.prev/`, auto-restored if health check fails
+- **Venv preservation** — venv excluded from tarball; copied back from backup after update, then `pip install -r requirements.txt`
+- **Agent separation** — agent lives at `~/iris-updater/` on Pi, outside `~/IrisPanel/` so updates don't overwrite it
+- **Clean git enforcement** — publish.py refuses dirty trees (filters `releases/` and `state.json` from the check)
+- **No hot-reload** — server reads `state.json` once at startup; restart needed after publishing
+- **Sudoers for systemctl** — passwordless stop/start/restart for the `irispanel` service
+- **Health check** — 5-second wait after `systemctl start`, then `is-active` check; rollback on failure
+- **Config persistence** — `current_version` in `~/.iris_updater_config.json` only updated after successful update
+
+### Deployment notes (not yet done)
+- Deploy agent to Pi at `~/iris-updater/`
+- Copy `config.json.example` to `~/.iris_updater_config.json` and fill in server IP
+- Install systemd unit: `sudo cp iris-updater.service /etc/systemd/system/ && sudo systemctl enable iris-updater`
+- Add sudoers entry: `scott ALL=(root) NOPASSWD: /usr/bin/systemctl stop irispanel, /usr/bin/systemctl start irispanel, /usr/bin/systemctl restart irispanel`

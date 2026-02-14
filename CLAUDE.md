@@ -8,6 +8,7 @@ Philips Hue smart light control app with a FastAPI backend and React frontend (C
 - **Frontend**: React 18 + htm (tagged template literals via CDN import maps), Tailwind CSS (CDN play mode)
 - **Config**: `~/.irispanel_config.json` (persists bridge IP)
 - **Web port**: 5050
+- **Update server port**: 5051
 
 ## File Structure
 
@@ -40,6 +41,18 @@ frontend/
       GroupModal.js
 run.py                # Entry point: uvicorn runner
 requirements.txt      # fastapi, uvicorn[standard], phue, httpx
+update-server/
+  server.py           # FastAPI: GET /api/latest, GET /api/download/{version}
+  publish.py          # CLI: package code → releases/irispanel-{N}.tar.gz
+  models.py           # Pydantic: ReleaseInfo
+  run_server.py       # uvicorn entry (port 5051)
+  releases/           # gitignored — stored tarballs
+  state.json          # gitignored — next build number + latest release info
+update-agent/
+  agent.py            # Polling loop + download + apply + rollback
+  config.json.example # Template for ~/.iris_updater_config.json
+  requirements.txt    # httpx
+  iris-updater.service # systemd unit file
 ```
 
 ## Core Features
@@ -75,6 +88,21 @@ pip install -r requirements.txt
 python run.py
 # Open http://localhost:5050
 ```
+
+## Update System
+
+**Publish a release** (on Mac):
+```sh
+python update-server/publish.py     # Creates tarball from clean git tree
+python update-server/run_server.py  # Starts update server on :5051
+```
+
+**Update agent** (on Pi):
+- Config: `~/.iris_updater_config.json` (see `update-agent/config.json.example`)
+- Polls server for new versions, downloads + verifies SHA-256, applies with rollback
+- Runs as `iris-updater.service` systemd unit
+- Agent code lives at `~/iris-updater/` on Pi (separate from app install)
+- Sudoers entry needed for systemctl stop/start/restart irispanel
 
 ## Known Issues
 

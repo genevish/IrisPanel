@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.idea/
+update-server/releases/
+update-server/state.json
