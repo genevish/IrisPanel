@@ -35,10 +35,10 @@ def git_is_clean() -> bool:
         cwd=REPO_ROOT, capture_output=True, text=True,
     )
     # Filter out untracked files in update-server/releases/ and state.json
+    ignored = {"update-server/", ".idea/"}
     lines = [
         line for line in result.stdout.strip().splitlines()
-        if line and not line.endswith("update-server/releases/")
-        and "update-server/state.json" not in line
+        if line and not any(ign in line for ign in ignored)
     ]
     return len(lines) == 0
 
