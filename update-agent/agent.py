@@ -12,6 +12,7 @@ import time
 from pathlib import Path
 
 import httpx
+import websockets.sync.client as ws_client
 
 CONFIG_PATH = Path.home() / ".iris_updater_config.json"
 
@@ -150,6 +151,23 @@ def apply_update(tarball: Path, version: int, config: dict) -> bool:
             shutil.rmtree(extract_dir)
 
 
+def refresh_browser():
+    """Reload Chromium kiosk via Chrome DevTools Protocol."""
+    try:
+        resp = httpx.get("http://localhost:9222/json", timeout=5)
+        tabs = resp.json()
+        if not tabs:
+            log.warning("No browser tabs found for refresh")
+            return
+        ws_url = tabs[0]["webSocketDebuggerUrl"]
+        with ws_client.connect(ws_url) as ws:
+            ws.send(json.dumps({"id": 1, "method": "Page.reload"}))
+            ws.recv(timeout=5)
+        log.info("Browser refreshed")
+    except Exception:
+        log.warning("Could not refresh browser (is Chromium running with --remote-debugging-port=9222?)")
+
+
 def rollback(install_dir: Path, backup_dir: Path, service_name: str):
     try:
         log.info("Rolling back to previous version")
@@ -207,6 +225,7 @@ def main():
                 current_version = version
                 config["current_version"] = current_version
                 save_config(config)
+                refresh_browser()
             else:
                 log.error("Update to version %d failed", version)
 
