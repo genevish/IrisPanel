@@ -11,7 +11,7 @@ export default function Header({ onAddRoom }) {
     return html`
         <header class="sticky top-0 z-40 bg-surface/80 backdrop-blur-md border-b border-surface-border">
             <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-                <h1 class="text-xl font-bold text-iris-text tracking-tight">The Iris Panel</h1>
+                <h1 class="text-xl font-bold text-iris-text tracking-tight">The Iris Panel <span class="text-xs font-normal text-iris-muted/50">b3</span></h1>
                 <div class="flex items-center gap-3">
                     <button
                         onClick=${refresh}
