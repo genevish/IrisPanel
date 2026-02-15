@@ -1,60 +1,47 @@
-# Session Summary – 2026-02-14 (Session 5)
+# Session Summary – 2026-02-15 (Session 6)
 
 ## Task
-Implement a complete auto-update system for IrisPanel: an update server on the developer's Mac and an update agent on the Raspberry Pi.
+Deploy the update server to the Mac and the update agent to the Raspberry Pi, then publish and apply the first release.
 
-## What was built
+## What was done
 
-### Update Server (`update-server/`)
-- **`server.py`** — FastAPI app using lifespan pattern (matches `backend/main.py`). Loads `state.json` at startup. Two endpoints:
-  - `GET /api/latest` → `ReleaseInfo` JSON or 404 if no releases
-  - `GET /api/download/{version}` → FileResponse streaming tarball or 404
-- **`publish.py`** — CLI that packages the codebase into numbered tarballs:
-  1. Reads `state.json` for `next_build_number`
-  2. Refuses dirty git trees (filters out `releases/` and `state.json` from check)
-  3. Creates `releases/irispanel-{N}.tar.gz` with `irispanel/` prefix
-  4. Computes SHA-256, updates `state.json`
-  5. Cleans old releases (keeps last 5)
-- **`models.py`** — `ReleaseInfo` Pydantic model (version, sha256, filename, timestamp, git_commit, size_bytes)
-- **`run_server.py`** — uvicorn entry point on port 5051
+### Update server deployment (Mac)
+- Created launchd plist at `~/Library/LaunchAgents/com.irispanel.update-server.plist`
+- Service runs at login, keeps alive, logs to `~/Library/Logs/irispanel-update-server.log`
+- Uses `/Users/scott/anaconda3/bin/python3` to run `run_server.py` on port 5051
 
-### Update Agent (`update-agent/`)
-- **`agent.py`** — Standalone polling script:
-  1. Polls `GET /api/latest` every N seconds
-  2. Downloads tarball if newer version available
-  3. Verifies SHA-256 checksum
-  4. Applies update: extract → stop service → backup current → move new → restore venv → pip install → start service → health check
-  5. Rolls back automatically on failure (restores backup, restarts old version)
-  6. Updates `current_version` in config only after success
-- **`config.json.example`** — Template for `~/.iris_updater_config.json`
-- **`requirements.txt`** — `httpx`
-- **`iris-updater.service`** — systemd unit (user=scott, restart=always, restartSec=30)
+### First release published
+- `publish.py` created `irispanel-1.tar.gz` (15,252 bytes, commit `571d6ad`)
+- Restarted update server with `launchctl kickstart -k` to pick up new `state.json`
+- Verified `/api/latest` returned correct release metadata
 
-### Other changes
-- `.gitignore` — Added `update-server/releases/`, `update-server/state.json`
-- `CLAUDE.md` — Added file structure, port, and usage docs for the update system
+### Update agent deployment (Pi at `scott@192.168.0.215`)
+- Rsynced `update-agent/` to `~/iris-updater/`
+- Created `~/.iris_updater_config.json` (server: `http://192.168.0.181:5051`, poll: 60s)
+- Created Python venv at `~/iris-updater/venv/` with httpx installed
+- Installed + enabled `iris-updater.service` systemd unit
+- Added `/etc/sudoers.d/iris-updater` for passwordless systemctl on irispanel
 
-## Key design decisions
-- **Integer versioning** (1, 2, 3...) — simple, auto-incrementing, no semver overhead
-- **Tarball with `irispanel/` prefix** — extraction always produces a known directory name
-- **SHA-256 verification** — prevents applying corrupted/tampered releases
-- **Rollback on failure** — backup at `~/IrisPanel.prev/`, restored if health check fails or any exception during apply
-- **Venv not in tarball** — copied back from backup, then `pip install -r requirements.txt` refreshes deps
-- **Agent separate from app** — lives at `~/iris-updater/`, never overwritten by updates
-- **No server hot-reload** — `state.json` read once at startup; restart server after publish
-- **Sudoers for systemctl** — agent needs passwordless stop/start/restart for `irispanel` service
-- **Config-based version tracking** — `current_version` in `~/.iris_updater_config.json`, only bumped after confirmed success
+### End-to-end verification
+- Agent detected release #1, downloaded, verified SHA-256, applied successfully
+- Both `irispanel` and `iris-updater` services confirmed active
+- `current_version` updated to 1 in agent config
 
-## Deployment steps (not yet done)
-1. Deploy agent to Pi: `rsync -avz update-agent/ scott@192.168.0.215:~/iris-updater/`
-2. Create config: `cp config.json.example ~/.iris_updater_config.json` (fill in server IP)
-3. Install venv + deps: `python -m venv ~/iris-updater/venv && ~/iris-updater/venv/bin/pip install httpx`
-4. Install systemd unit: `sudo cp iris-updater.service /etc/systemd/system/ && sudo systemctl enable --now iris-updater`
-5. Add sudoers: `echo 'scott ALL=(root) NOPASSWD: /usr/bin/systemctl stop irispanel, /usr/bin/systemctl start irispanel, /usr/bin/systemctl restart irispanel' | sudo tee /etc/sudoers.d/iris-updater`
+## Bugs fixed
+1. **`publish.py` dirty-tree check too strict** — `.idea/workspace.xml` blocked publishing. Broadened ignore filter to `{"update-server/", ".idea/"}`.
+2. **`iris-updater.service` wrong venv** — ExecStart pointed to app's venv (`/home/scott/IrisPanel/venv/bin/python`). Fixed to agent's own venv (`/home/scott/iris-updater/venv/bin/python`).
 
-## Verification (not yet done)
-1. `python update-server/publish.py` — verify tarball created
-2. `python update-server/run_server.py` — hit `/api/latest`, verify response
-3. Run agent locally against localhost — verify download + apply flow
-4. Deploy to Pi, publish a release, watch `journalctl -u iris-updater -f`
-5. Publish a broken release — verify rollback works
+## Commits pushed to master
+- `7b6b108` — Relax publish.py dirty-tree check to ignore update-server/ and .idea/
+- `38b2eea` — Fix iris-updater service to use agent's own venv
+
+## Current deployment state
+- **Mac**: Update server running as `com.irispanel.update-server` launchd service on port 5051
+- **Pi**: Update agent running as `iris-updater` systemd service, polling every 60s, current_version=1
+- **Git**: master at `38b2eea`, pushed to `github.com:genevish/IrisPanel.git`
+
+## Useful commands
+- Restart update server: `launchctl kickstart -k gui/$(id -u)/com.irispanel.update-server`
+- Stop update server: `launchctl unload ~/Library/LaunchAgents/com.irispanel.update-server.plist`
+- Check agent logs: `ssh scott@192.168.0.215 'journalctl -u iris-updater -f'`
+- Publish new release: `python3 update-server/publish.py` (then restart update server)

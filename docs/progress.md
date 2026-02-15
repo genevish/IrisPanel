@@ -144,3 +144,38 @@
 - Copy `config.json.example` to `~/.iris_updater_config.json` and fill in server IP
 - Install systemd unit: `sudo cp iris-updater.service /etc/systemd/system/ && sudo systemctl enable iris-updater`
 - Add sudoers entry: `scott ALL=(root) NOPASSWD: /usr/bin/systemctl stop irispanel, /usr/bin/systemctl start irispanel, /usr/bin/systemctl restart irispanel`
+
+## Session 6 – 2026-02-15
+
+### What was done
+- **Deployed update server to Mac**: Created launchd plist at `~/Library/LaunchAgents/com.irispanel.update-server.plist` — runs at login, keeps alive, logs to `~/Library/Logs/irispanel-update-server.log`.
+- **Published release #1**: Ran `publish.py`, which created `irispanel-1.tar.gz` (15,252 bytes, commit `571d6ad`).
+- **Fixed `publish.py` dirty-tree check**: Broadened `git_is_clean()` ignore filter from specific paths to `{"update-server/", ".idea/"}` set — neither ships in releases.
+- **Fixed `iris-updater.service` venv path**: Changed `ExecStart` from app's venv (`/home/scott/IrisPanel/venv/bin/python`) to agent's own venv (`/home/scott/iris-updater/venv/bin/python`).
+- **Deployed update agent to Pi** (`scott@192.168.0.215`):
+  - Rsynced `update-agent/` to `~/iris-updater/`
+  - Created `~/.iris_updater_config.json` (server: `http://192.168.0.181:5051`, poll: 60s)
+  - Created venv + installed httpx
+  - Installed systemd unit, enabled service
+  - Added sudoers entry for passwordless `systemctl stop/start/restart irispanel`
+- **Verified end-to-end**: Agent detected release #1, downloaded, verified SHA-256, applied successfully. Both `irispanel` and `iris-updater` services active.
+
+### Files modified
+- `update-server/publish.py` — relaxed dirty-tree check to ignore `update-server/` and `.idea/`
+- `update-agent/iris-updater.service` — fixed ExecStart venv path
+
+### Files created (not in repo)
+- `~/Library/LaunchAgents/com.irispanel.update-server.plist` — macOS launchd service
+- Pi: `~/.iris_updater_config.json`, `~/iris-updater/venv/`, `/etc/systemd/system/iris-updater.service`, `/etc/sudoers.d/iris-updater`
+
+### Commits pushed
+- `7b6b108` — Relax publish.py dirty-tree check to ignore update-server/ and .idea/
+- `38b2eea` — Fix iris-updater service to use agent's own venv
+
+### Deployment state
+- **Mac**: Update server running as `com.irispanel.update-server` launchd service on port 5051
+- **Pi**: Update agent running as `iris-updater` systemd service, polling every 60s, current_version=1
+- **Useful commands**:
+  - Restart update server: `launchctl kickstart -k gui/$(id -u)/com.irispanel.update-server`
+  - Check agent logs: `ssh scott@192.168.0.215 'journalctl -u iris-updater -f'`
+  - Publish new release: `python3 update-server/publish.py` (then restart update server)
