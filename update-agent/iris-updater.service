@@ -6,7 +6,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=scott
-ExecStart=/home/scott/IrisPanel/venv/bin/python /home/scott/iris-updater/agent.py
+ExecStart=/home/scott/iris-updater/venv/bin/python /home/scott/iris-updater/agent.py
 Restart=always
 RestartSec=30
 
